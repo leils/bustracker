@@ -13,7 +13,7 @@ white = 0xFFFFFF
 orange = 0xF9580C
 
 # URLs to fetch from
-JSON_DATA_URL = 'https://webservices.umoiq.com/api/pub/v1/agencies/sfmta-cis/stopcodes/15018/predictions?key=0be8ebd0284ce712a63f29dcaf7798c4'
+JSON_DATA_URL = 'https://webservices.umoiq.com/api/pub/v1/agencies/sfmta-cis/stopcodes/15018/predictions?key=0be8ebd0284ce712a63f29dcaf7798c4&accept-encoding=json'
 
 # Get wifi details and more from a secrets.py file
 try:
@@ -30,21 +30,27 @@ pool = socketpool.SocketPool(wifi.radio)
 requests = adafruit_requests.Session(pool, ssl.create_default_context())
 
 while True:
-    response = requests.get(JSON_DATA_URL)
-    # response = requests.get(REQ_URL)
-    try: 
-        for route in response.json(): 
-            routeID = route['route']['id']
-            if routeID == "22": 
-                routeName = route['route']['title']
-                first_eta = route['values'][0]['minutes']
-                second_eta = route['values'][1]['minutes']
-                break
-        
-        text = f"Next 22: \n{first_eta}, {second_eta}" 
-    except: 
-        print(response.json())
-        text = "Error"
+    
+    hasValidData = False
+    
+    while not hasValidData:
+        response = requests.get(JSON_DATA_URL)
+
+        try:
+            for route in response.json():
+                routeID = route['route']['id']
+                if routeID == "22":
+                    routeName = route['route']['title']
+                    first_eta = route['values'][0]['minutes']
+                    second_eta = route['values'][1]['minutes']
+                    break
+
+            text = f"Next 22: \n{first_eta}, {second_eta}"
+            hasValidData = True #Break our reload loop
+        except:
+            # Print the error, wait 5 seconds before attempting to load request again
+            print(response.json())
+            time.sleep(5)
 
     scale = 4
 
